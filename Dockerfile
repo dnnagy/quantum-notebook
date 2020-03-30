@@ -1,4 +1,4 @@
-FROM nagyd96/jupyter-notebook-base:latest
+FROM nagyd96/jupyter-notebook-base:2020-03-26-1
 
 # install the missing apt packages that aren't copied over
 RUN apt-get update && apt-get -yq dist-upgrade && \
@@ -34,9 +34,6 @@ RUN python3 -m pip --default-timeout=99999 install pennylane-forest==0.8.0
 RUN python3 -m pip --default-timeout=99999 install autograd==1.3 
 RUN python3 -m pip --default-timeout=99999 install tensorflow==1.13.2
 
-# Install gym
-RUN python3 -m pip --default-timeout=99999 install gym==0.17.1
-
 # RUN apt-get update && apt-get -yq dist-upgrade && \
 #     apt-get install --no-install-recommends -yq
 
@@ -49,13 +46,17 @@ RUN echo "y\n/" | /forest-sdk-2.18.0-linux-deb/forest-sdk-2.18.0-linux-deb.run -
 # Copy the binaries to a folder already in $PATH
 RUN cp /forest-sdk-2.18.0-linux-deb/* /usr/local/bin/
 
+# Install gym
+RUN python3 -m pip --default-timeout=99999 install gym==0.17.1
 
-# Install gym-forest requirements
+# Do not install gym-forest deps, because they mess up pennylane-forest
+RUN git clone https://github.com/rigetti/gym-forest.git && \
+    cd gym-forest && \
+    curl -OL https://github.com/rigetti/gym-forest/releases/download/0.0.1/data.tar.bz2 && \
+    tar -xvf data.tar.bz2 && \
+    python3 -m pip install stable_baselines==2.10.0 && python3 -m pip install --no-deps .
 
-# Install gym-forest
-#RUN git clone https://github.com/rigetti/gym-forest.git
-#RUN cd gym-forest
-#RUN curl -OL https://github.com/rigetti/gym-forest/releases/download/0.0.1/data.tar.bz2
-#RUN tar -xvf data.tar.bz2
-#RUN python3 -m pip install -e . 
+ENTRYPOINT sh -c 'quilc --quiet -R &> quilc.log &' && sh -c 'qvm --quiet -S &> qvm.log &' && /usr/local/bin/docker-entrypoint.sh
+
+
 
